@@ -70,6 +70,12 @@ type BuiltinEvalContext struct {
 // BuiltinEvalContext implements EvalContext
 var _ EvalContext = (*BuiltinEvalContext)(nil)
 
+func (ctx *BuiltinEvalContext) WithPath(path addrs.ModuleInstance) EvalContext {
+	newCtx := *ctx
+	newCtx.PathValue = path
+	return &newCtx
+}
+
 func (ctx *BuiltinEvalContext) Stopped() <-chan struct{} {
 	// This can happen during tests. During tests, we just block forever.
 	if ctx.StopContext == nil {
