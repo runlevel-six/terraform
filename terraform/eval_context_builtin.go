@@ -32,6 +32,13 @@ type BuiltinEvalContext struct {
 	// PathValue is the Path that this context is operating within.
 	PathValue addrs.ModuleInstance
 
+	// pathSet indicates that this context was explicitly created for a
+	// specific path, and can be safely used for evaluation. Path and
+	// Evaluation methods will panic if this is not set.
+	// This is a temporary safety mechanism while refactoring context usage,
+	// and should be re-factored out later.
+	pathSet bool
+
 	// Evaluator is used for evaluating expressions within the scope of this
 	// eval context.
 	Evaluator *Evaluator
@@ -71,6 +78,7 @@ type BuiltinEvalContext struct {
 var _ EvalContext = (*BuiltinEvalContext)(nil)
 
 func (ctx *BuiltinEvalContext) WithPath(path addrs.ModuleInstance) EvalContext {
+	ctx.pathSet = true
 	newCtx := *ctx
 	newCtx.PathValue = path
 	return &newCtx
@@ -297,6 +305,9 @@ func (ctx *BuiltinEvalContext) EvaluateExpr(expr hcl.Expression, wantType cty.Ty
 }
 
 func (ctx *BuiltinEvalContext) EvaluationScope(self addrs.Referenceable, keyData InstanceKeyEvalData) *lang.Scope {
+	if !ctx.pathSet {
+		panic("context path not set")
+	}
 	data := &evaluationStateData{
 		Evaluator:       ctx.Evaluator,
 		ModulePath:      ctx.PathValue,
@@ -307,12 +318,19 @@ func (ctx *BuiltinEvalContext) EvaluationScope(self addrs.Referenceable, keyData
 }
 
 func (ctx *BuiltinEvalContext) Path() addrs.ModuleInstance {
+	if !ctx.pathSet {
+		panic("context path not set")
+	}
 	return ctx.PathValue
 }
 
 func (ctx *BuiltinEvalContext) SetModuleCallArguments(n addrs.ModuleCallInstance, vals map[string]cty.Value) {
 	ctx.VariableValuesLock.Lock()
 	defer ctx.VariableValuesLock.Unlock()
+
+	if !ctx.pathSet {
+		panic("context path not set")
+	}
 
 	childPath := n.ModuleInstance(ctx.PathValue)
 	key := childPath.String()
