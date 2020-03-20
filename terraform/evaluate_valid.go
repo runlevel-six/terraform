@@ -106,7 +106,7 @@ func (d *evaluationStateData) staticValidateReference(ref *addrs.Reference, self
 			// but is close enough for our purposes.
 			SrcRange: ref.SourceRange.ToHCL(),
 		}
-		return d.staticValidateModuleCallReference(modCfg, addr.Call.Call, remain, ref.SourceRange)
+		return d.staticValidateModuleCallReference(modCfg, addr.Call, remain, ref.SourceRange)
 
 	default:
 		// Anything else we'll just permit through without any static validation
